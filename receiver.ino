@@ -1,37 +1,36 @@
-#define RF_PIN 10       // 433 MHz přijímač
-#define MOSFET_PIN 8    // MOSFET ovládající elektromagnet
+#define RF_PIN 10       // 433 MHz receiver pin
+#define MOSFET_PIN 8    // MOSFET LR7843 pin
 
 void setup() {
   Serial.begin(9600);
-  pinMode(MOSFET_PIN, OUTPUT);   // Pin pro MOSFET
-  pinMode(RF_PIN, INPUT);        // Pin pro 433 MHz přijímač
+  pinMode(MOSFET_PIN, OUTPUT);   //MOSFET setup
+  pinMode(RF_PIN, INPUT);        //receiver setup
   Serial.println("System ready");
 }
 
 void loop() {
-  unsigned long highTime = pulseIn(RF_PIN, HIGH); // Změříme délku impulzu v logické HIGH
-  unsigned long lowTime = pulseIn(RF_PIN, LOW);   // Změříme délku impulzu v logické LOW
-  unsigned long cycleTime = highTime + lowTime;   // Vypočítáme celkovou délku PWM cyklu
+  unsigned long highTime = pulseIn(RF_PIN, HIGH);
+  unsigned long lowTime = pulseIn(RF_PIN, LOW);
+  unsigned long cycleTime = highTime + lowTime; 
   float dutyCycle = 0.0;
-
-  // Ošetření dělení nulou - pokud není žádný signál, přeskočíme výpočet střídy
+  
   if (cycleTime > 0) {
-    dutyCycle = ((float)highTime / (float)cycleTime) * 100; // Vypočítáme střídou PWM v %
+    dutyCycle = ((float)highTime / (float)cycleTime) * 100;
   }
 
-  // Ladicí výpis střídy PWM
+  //debug
   Serial.print("Duty cycle: ");
   Serial.println(dutyCycle);
 
-  // Pokud je střída v rozmezí 45 - 50 %, aktivuje se elektromagnet
+  // if the class is in the range about 45%-55.5%, it will disable the MOSFET
   if ((dutyCycle >= 45.0) && (dutyCycle <= 55.5)) {
-    Serial.println("Signal detected - Activating electromagnet");
-    digitalWrite(MOSFET_PIN, LOW);  // Sepne MOSFET a aktivuje elektromagnet
-    delay(10000);  // Elektromagnet bude aktivní po dobu 6 sekund
-    digitalWrite(MOSFET_PIN, HIGH);   // Deaktivuje MOSFET
-  } else {
-    digitalWrite(MOSFET_PIN, HIGH);  // Elektromagnet zůstává vypnutý, pokud není signál
+    Serial.println("Signal detected - Deactivating MOSFET");
+    digitalWrite(MOSFET_PIN, LOW);  //disable the mosfet (change to HIGHT instead of LOW if your mosfet activates at this point)
+    delay(10000);  //10 seconds delay for cooling
+    digitalWrite(MOSFET_PIN, HIGH);   //activate mosfet (change to LOW instead of HIGH if your mosfet disables at this point)
+  } else { //If the class is in a different range
+    digitalWrite(MOSFET_PIN, HIGH);  // MOSFET is still activated until the signal is detected
   }
 
-  delay(100);  // Krátká pauza mezi cykly
+  delay(100);
 }
